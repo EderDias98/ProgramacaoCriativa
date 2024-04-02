@@ -17,7 +17,7 @@ typedef void (*fptrProcessaDados)(tEngine* engine);
 
 tEngine* criaEngine();
 
-void imprimiFrame(char **mapa);
+void imprimiFrame(tEngine* engine);
 
 
 char** iniciaMapa();
