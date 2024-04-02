@@ -1,8 +1,8 @@
 #include "engine.h"
 #define LARGURA_TELA 60
-#define ALTURA_TELA 20
-#define SlEEP 1000000
-#define LIMITE_PULO ALTURA_TELA/2
+#define ALTURA_TELA 10
+#define SlEEP 100000
+#define LIMITE_PULO 5
 #include <termios.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -17,6 +17,7 @@ struct engine{
     int sleep;
     int gameOver;
     char caracterePressionado;
+    int caindo;
     char **mapa;
 };
 
@@ -25,7 +26,7 @@ tEngine* criaEngine(){
     engine->sleep = SlEEP;
     engine->mapa = iniciaMapa();
     engine->altura= 0;
-    engine->distancia = LARGURA_TELA/2;
+    engine->distancia = LARGURA_TELA -1;
 
     return engine;
 }
@@ -59,27 +60,44 @@ char** iniciaMapa(){
 
 void processaDados(tEngine* engine){
     // inicicio
-    if(engine->gameOver){
-        printf("GAME OVER!\n");
-        return;
-    }
+
 
 
     printf("Precione q pra sair\n");
     printf("Altura: %d, Distancia: %d\n", engine->altura, engine->distancia);
 
+    if(engine->gameOver){
+        printf("GAME OVER!\n");
+        return;
+    }
+    
+
     if(engine->altura == 0 && engine->caracterePressionado == ' ' ){
-        printf("dddddddd");
+        engine->caracterePressionado = '\0';
         engine->pulando = 1;
     }
 
-    int caindo =0;
 
     if(engine->pulando ){
-        if(engine->altura < LIMITE_PULO && !caindo){
-            engine->altura++;
-        }else engine->altura--;
+
+        engine->mapa[ALTURA_TELA-1 - engine->altura ][(LARGURA_TELA -1 )/2] = ' ';
+
+
+
+        if(engine->altura == LIMITE_PULO ){
+            engine->caindo =1;
+        }
         
+        if(!engine->caindo){
+            engine->altura++;
+            
+        }
+
+        if(engine->caindo){
+            engine->altura--;
+            
+        }
+
     }
 
 
@@ -93,14 +111,28 @@ void processaDados(tEngine* engine){
 
 
     engine->mapa[ALTURA_TELA-1 - engine->altura ][(LARGURA_TELA -1 )/2] = 'X';
-    if((engine->altura -1) >=0){
-        engine->mapa[ALTURA_TELA-1 - engine->altura +1 ][(LARGURA_TELA -1 )/2] = ' ';
-        printf("2");
+
+    engine->mapa[ALTURA_TELA-1 ][ engine->distancia] = ' ';
+  
+    engine->distancia--;
+    engine->mapa[ALTURA_TELA-1 ][ engine->distancia] = '|';
+
+    if(engine->distancia < 0){
+        engine->distancia = LARGURA_TELA-1;
     }
+
+    if( engine->altura ==0 && engine->distancia == (LARGURA_TELA/2) ){
+        engine->gameOver =1;
+        printf("\nGAME OVER\n");
+        return;
+    }
+
     imprimiFrame(engine);
 
-    if(engine->altura == 0)
+    if(engine->altura == 0){
         engine->pulando=0;
+        engine->caindo =0;
+    }
 }
 
 
@@ -127,12 +159,14 @@ fcntl(entradaPadrao, F_SETFL, fcntl(entradaPadrao, F_GETFL) | O_NONBLOCK);
 
         if(engine->sleep-- == 0){
 
+            system("clear"); // Limpa a tela (no Unix/Linux/Mac)
+            printf("\033[H");
             
-            printf("\033[2J\033[H");
+            
             engine->sleep = SlEEP;
 
            
-        
+         
             fptrProcessaDados(engine);
 
             // printf("# %c #",engine->caracterePressionado);
